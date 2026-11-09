@@ -1,0 +1,33 @@
+﻿title: Attic_Paper
+---
+林书予: 这些记录，本该是整齐、完整的。{$pause = 500}
+林书予: 可是这一页……被人撕掉了。{$pause = 800}
+-> 保留这张残页
+    <<jump KeepPaper>>
+-> 把它放回原处
+    <<jump ErasePaper>>
+===
+
+title: KeepPaper
+---
+林书予: 我知道了。有些真相，值得留下来。
+<<set $keptPaper = true>>
+<<jump Huiyi_Appears>>
+===
+
+title: ErasePaper
+---
+林书予: 也许……有些事真的不必再翻出来了。
+<<set $keptPaper = false>>
+<<jump Huiyi_Appears>>
+===
+
+title: Huiyi_Appears
+---
+林慧宜: 书予，天色不早了。
+{if $keptPaper}
+林慧宜: 你手上拿的是什么？
+{else}
+林慧宜: 你翻到不该看的东西了吗？
+{endif}
+===
