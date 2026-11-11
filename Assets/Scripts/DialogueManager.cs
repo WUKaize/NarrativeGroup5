@@ -1,55 +1,112 @@
 using UnityEngine;
-using TMPro;
 using System.Collections.Generic;
+using TMPro;
 
 public class DialogueManager : MonoBehaviour
 {
-    [Header("引用拖拽赋值")]
+    [Header("引用拖拽")]
     public GameObject dialoguePanel;
-    public TMP_Text speakerText;
-    public TMP_Text contentText;
-    public GameObject nextBtn;
+    public GameObject DimOverlay;
+    public TMP_Text paperText;      // 羊皮纸残页文字
+    public TMP_Text bottomText;     // 底部对话框文字
+    public GameObject btnNext;
 
-    // 存一组对话：说话人 + 台词
-    private Queue<(string speaker, string content)> dialogueQueue;
-    private bool isDialogueActive;
+    [Header("打字设置")]
+    public float typeSpeed = 0.05f;
+
+    private List<(string speaker, string content)> dialogueList;
+    private int currentIndex;
+    private bool isTyping;
+    private string fullText;
 
     void Start()
     {
-        dialogueQueue = new Queue<(string, string)>();
         dialoguePanel.SetActive(false);
+        if (btnNext != null) btnNext.SetActive(false);
     }
 
-    // 外部调用：开启一段对话
-    public void StartDialogue(List<(string speaker, string content)> lines)
+    public void StartDialogue(List<(string speaker, string content)> list)
     {
-        dialogueQueue.Clear();
-        foreach (var line in lines)
-        {
-            dialogueQueue.Enqueue(line);
-        }
+        dialogueList = list;
+        currentIndex = 0;
         dialoguePanel.SetActive(true);
-        isDialogueActive = true;
-        ShowNextLine();
+        ShowLine();
     }
 
-    // 展示下一句
-    public void ShowNextLine()
+    void ShowLine()
     {
-        if (dialogueQueue.Count <= 0)
+        if (currentIndex >= dialogueList.Count)
         {
             CloseDialogue();
             return;
         }
-        var line = dialogueQueue.Dequeue();
-        speakerText.text = line.speaker;
-        contentText.text = line.content;
+
+        var line = dialogueList[currentIndex];
+        string content = line.content;
+
+        // 先清空两个文本
+        paperText.text = "";
+        bottomText.text = "";
+
+        if (content.StartsWith("[PAGE]"))
+        {
+            fullText = content.Replace("[PAGE]", "").Trim();
+            StartCoroutine(TypeText(paperText));
+        }
+        else if (content.StartsWith("[DIALOG]"))
+        {
+            fullText = content.Replace("[DIALOG]", "").Trim();
+            StartCoroutine(TypeText(bottomText));
+        }
+        else
+        {
+            // 默认放到底部对话框
+            fullText = content;
+            StartCoroutine(TypeText(bottomText));
+        }
     }
 
-    // 关闭对话框
-    public void CloseDialogue()
+    System.Collections.IEnumerator TypeText(TMP_Text targetText)
+    {
+        isTyping = true;
+        targetText.text = "";
+        for (int i = 0; i < fullText.Length; i++)
+        {
+            targetText.text += fullText[i];
+            yield return new WaitForSeconds(typeSpeed);
+        }
+        isTyping = false;
+        if (btnNext != null) btnNext.SetActive(true);
+    }
+
+    // 【继续按钮绑定这个函数】
+    public void OnClickNext()
+    {
+        if (isTyping)
+        {
+            // 如果还在打字，一键显示全部文字
+            if (fullText.StartsWith("[PAGE]"))
+                paperText.text = fullText.Replace("[PAGE]", "").Trim();
+            else
+                bottomText.text = fullText.Replace("[DIALOG]", "").Trim();
+            isTyping = false;
+            if (btnNext != null) btnNext.SetActive(true);
+            return;
+        }
+
+        currentIndex++;
+        if (btnNext != null) btnNext.SetActive(false);
+        ShowLine();
+    }
+
+    void CloseDialogue()
     {
         dialoguePanel.SetActive(false);
-        isDialogueActive = false;
+        if (DimOverlay != null)
+        {
+            DimOverlay.SetActive(false);
+        }
+        paperText.text = "";
+        bottomText.text = "";
     }
 }
